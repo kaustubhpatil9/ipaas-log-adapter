@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw" xmlns:metadata="http://www.mulesoft.org/schema/mule/metadata" xmlns:tls="http://www.mulesoft.org/schema/mule/tls" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns:cloudhub="http://www.mulesoft.org/schema/mule/cloudhub" xmlns:json="http://www.mulesoft.org/schema/mule/json" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/cloudhub http://www.mulesoft.org/schema/mule/cloudhub/current/mule-cloudhub.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd
+http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/current/mule-tls.xsd
+http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd">
+    <http:request-config name="HTTP_Request_Configuration_splunk" host="${splunk.host}" port="${splunk.port}" doc:name="HTTP Request Configuration"/>
+    <cloudhub:config name="Cloudhub__Basic_Auth_Authentication" username="${cloudhub.user}" password="${cloudhub.password}" doc:name="Cloudhub: Basic Auth Authentication"/>
+    <http:request-config name="HTTP_Request_Configuration_cloudhub" protocol="HTTPS" host="${anypoint.host}" port="443" doc:name="HTTP Request Configuration">
+        <tls:context>
+            <tls:trust-store insecure="true"/>
+        </tls:context>
+    </http:request-config>
+    	
+    
+    <flow name="cloudhub-to-splunk-data-push" processingStrategy="synchronous">
+        <poll doc:name="Poll">
+            <fixed-frequency-scheduler frequency="${poll.frequency}" timeUnit="MINUTES"/>
+            <watermark variable="lastAppRunDate" default-expression="${lastRunDate}" update-expression="#[flowVars.updateWatermark]"/>
+            <logger level="INFO" doc:name="Logger" message="Flow initiated"/>
+
+        </poll>
+        <flow-ref name="get-domain-flow" doc:name="get-domain-flow"/>
+        <catch-exception-strategy enableNotifications="false" logException="false" doc:name="Catch Exception Strategy">
+            <logger message="#[exception]" level="ERROR" doc:name="Logger"/>
+        </catch-exception-strategy>
+    </flow>
+    
+    <sub-flow name="get-domain-flow">
+        <cloudhub:list-applications config-ref="Cloudhub__Basic_Auth_Authentication" doc:name="Cloudhub"/>
+
+        <dw:transform-message doc:name="Select Collection names">
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+%var applicationlist = (p('application.names') splitBy ',') when (p('application.names') != null and p('application.names') != "") otherwise null
+---
+(payload filter $.status == 'STARTED' map $.domain) when applicationlist == null otherwise applicationlist]]></dw:set-payload>
+            <dw:set-variable resource="classpath:startTime.dwl" variableName="startTime"/>
+            <dw:set-variable resource="classpath:endTime.dwl" variableName="endTime"/>
+        </dw:transform-message>
+
+        <collection-splitter doc:name="Collection Splitter"/>
+        <logger message="#['\n'] Application Name :  #[payload]  #['\n']" level="INFO" doc:name="Logger"/>
+        <dw:transform-message doc:name="Set Watermark Date">
+            <dw:set-variable resource="classpath:updateWatermark.dwl" variableName="updateWatermark"/>
+        </dw:transform-message>
+        <flow-ref name="getCloudHubLogs-push-to-splunk-Flow" doc:name="getCloudHubLogs-push-to-splunk-Flow"/>
+       
+
+    </sub-flow>
+    
+    <sub-flow name="getCloudHubLogs-push-to-splunk-Flow">
+        <set-variable variableName="domainName" value="#[payload]" doc:name="set variable domainName"/>
+        <set-payload value="{  &quot;username&quot; : &quot;${cloudhub.user}&quot;,  &quot;password&quot; : &quot;${cloudhub.password}&quot; }" mimeType="application/json" doc:name="Set Payload"/>
+        <http:request config-ref="HTTP_Request_Configuration_cloudhub" path="/accounts/login" method="POST" doc:name="HTTP - Anypoint Platform login API"/>
+
+        <dw:transform-message doc:name="Transform Message">
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+payload]]></dw:set-payload>
+        </dw:transform-message>
+        <set-property propertyName="Authorization" value="#['bearer ' + payload.access_token]" doc:name="Set Authorization property"/>
+        <dw:transform-message doc:name="Set Payload for Logs">
+            <dw:set-payload resource="classpath:logQuery.dwl"/>
+        </dw:transform-message>
+        <http:request config-ref="HTTP_Request_Configuration_cloudhub" path="${cloudhub.log.api.url}" method="POST" doc:name="HTTP - Anypoint Platform logs API">
+            <http:request-builder>
+                <http:uri-param paramName="app-name" value="#[flowVars.domainName]"/>
+            </http:request-builder>
+        </http:request>
+        <choice doc:name="Choice">
+            <when expression="#[dw('(sizeOf payload) &gt; 0')]">
+
+                <dw:transform-message doc:name="Set JSON Payload">
+                    <dw:set-payload resource="classpath:setJsonPayload.dwl"/>
+
+                </dw:transform-message>
+                <logger message="#['\n'] #[message.payloadAs(java.lang.String)] " level="INFO" doc:name="Logger"/>
+                <logger message="#['\n Pushing Application Logs To Log Analytic Tool \n']" level="INFO" doc:name="Logger"/>
+                <http:request config-ref="HTTP_Request_Configuration_splunk" path="/services/collector" method="POST" doc:name="HTTP">
+                    <http:request-builder>
+                        <http:header headerName="Authorization" value="${splunk.token}"/>
+                    </http:request-builder>
+                    <http:success-status-code-validator values="0..599"/>
+                </http:request>
+                <logger message="Splunks response code #[message.inboundProperties.'http.status']" level="INFO" doc:name="Logger"/>
+            </when>
+            <otherwise>
+                <logger message="No logs were returned for application #[flowVars.domainName]" level="INFO" doc:name="Logger"/>
+            </otherwise>
+        </choice>
+
+        
+
+    </sub-flow>
+
+    
+</mule>
