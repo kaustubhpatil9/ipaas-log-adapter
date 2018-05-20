@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd">
+	<flow name="app-main-logs-integration" processingStrategy="synchronous">
+		<poll doc:name="Poll">
+			<fixed-frequency-scheduler frequency="${poll.frequency}"
+				timeUnit="MINUTES" startDelay="1" />
+			<watermark variable="lastAppRunDate" default-expression="${lastRunDate}"
+				update-expression="#[flowVars.endTime]" />
+			<logger level="INFO" doc:name="Logger" message="Flow Initiated" />
+		</poll>
+
+		<set-variable variableName="endTime"
+			value="#[server.nanoTime()]" mimeType="application/java"
+			doc:name="FV SET: endTime" />
+
+
+		<logger
+			message="Start Time: #[flowVars.lastAppRunDate] End Time: #[flowVars.endTime]"
+			level="INFO" doc:name="LOG: Current Time Window" />
+
+		<flow-ref name="impl-cloudhub-to-splunk-data-push" doc:name="impl-cloudhub-to-splunk-data-push" />
+
+		<logger message="Flow Completed" level="INFO" doc:name="Logger" />
+
+		<catch-exception-strategy
+			enableNotifications="false" logException="false" doc:name="Catch Exception Strategy">
+			<logger message="#[exception]" level="ERROR" doc:name="Logger" />
+		</catch-exception-strategy>
+	</flow>
+
+	<flow name="app-main-ui-impl">
+		<http:listener config-ref="HTTP_Listener_Configuration"
+			path="/web/applications" doc:name="HTTP" />
+		<choice doc:name="Choice">
+			<when expression="#[message.inboundProperties.'http.method' == 'POST']">
+				<flow-ref name="sf-insert-application" doc:name="sf-insert-application" />
+
+				<set-property propertyName="#['http.status']" value="#[301]"
+					mimeType="application/java" doc:name="PROP SET: HTTP Redirect Status" />
+				<set-property propertyName="#['Location']" value="#['/web/applications']"
+					mimeType="application/java" doc:name="PROP SET: Location Header" />
+			</when>
+			<otherwise>
+				<parse-template location="web/index.html" doc:name="PT: Prepare Form HTML" />
+			</otherwise>
+		</choice>
+	</flow>
+
+</mule>

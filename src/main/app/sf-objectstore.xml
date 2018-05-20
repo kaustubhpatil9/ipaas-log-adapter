@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:objectstore="http://www.mulesoft.org/schema/mule/objectstore"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/objectstore http://www.mulesoft.org/schema/mule/objectstore/current/mule-objectstore.xsd">
+	<sub-flow name="sf-get-configured-applications">
+		<objectstore:all-keys config-ref="ApplicationStore"
+			doc:name="ObjectStore" />
+	</sub-flow>
+
+	<sub-flow name="sf-insert-application">
+		<objectstore:store config-ref="ApplicationStore"
+			key="#[payload.appName]" value-ref="#['CloudHub']"
+			overwrite="true" doc:name="ObjectStore" />
+	</sub-flow>
+
+</mule>

@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:cloudhub="http://www.mulesoft.org/schema/mule/cloudhub"
+	xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/cloudhub http://www.mulesoft.org/schema/mule/cloudhub/current/mule-cloudhub.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd">
+
+	<sub-flow name="sf-get-applications">
+		<flow-ref name="sf-get-configured-applications" doc:name="sf-get-configured-applications" />
+		<choice doc:name="IF: No Applications Configured">
+			<when expression="#[payload == empty]">
+				<cloudhub:list-applications config-ref="CloudhubConnectorBasicAuth"
+					doc:name="CH: Get All Applications" />
+				<dw:transform-message doc:name="DW: Filter Started Applications">
+					<dw:input-payload mimeType="application/json" />
+					<dw:set-payload resource="classpath:dwScripts\appDomainsFilter.dwl" />
+				</dw:transform-message>
+			</when>
+			<otherwise>
+				<logger message="Working on configured applications." level="INFO"
+					doc:name="Logger" />
+			</otherwise>
+		</choice>
+	</sub-flow>
+
+
+	<sub-flow name="sf-fetch-logs">
+		<dw:transform-message doc:name="Set Payload for Logs">
+			<dw:input-payload mimeType="application/json" />
+			<dw:set-payload resource="classpath:dwScripts\logQuery.dwl" />
+			<dw:set-property resource="classpath:dwScripts\setAuthorizationHeader.dwl"
+				propertyName="Authorization" />
+		</dw:transform-message>
+		<http:request config-ref="HTTPARMConnector" path="${cloudhub.log.api.url}"
+			method="POST" doc:name="HTTP - Anypoint Platform logs API">
+			<http:request-builder>
+				<http:uri-param paramName="app-name" value="#[flowVars.domainName]" />
+				<http:header headerName="X-ANYPNT-ENV-ID" value="${cloudhub.environment.id}" />
+				<http:header headerName="X-ANYPNT-ORG-ID" value="${cloudhub.organization.id}" />
+			</http:request-builder>
+		</http:request>
+	</sub-flow>
+
+	<sub-flow name="sf-login">
+		<set-payload
+			value="{  &quot;username&quot; : &quot;${cloudhub.user}&quot;,  &quot;password&quot; : &quot;${cloudhub.password}&quot; }"
+			mimeType="application/json" doc:name="SP: Login Request" />
+		<http:request config-ref="HTTPARMConnector" path="/accounts/login"
+			method="POST" doc:name="HTTP - Anypoint Platform login API" />
+	</sub-flow>
+
+</mule>
