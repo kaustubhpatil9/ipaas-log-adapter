@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd">
+	<sub-flow name="sf-fetch-insights">
+		<flow-ref name="sf-fetch-transactions" doc:name="sf-fetch-transactions" />
+		<flow-ref name="sf-fetch-transaction-details" doc:name="sf-fetch-transaction-details" />
+	</sub-flow>
+
+	<sub-flow name="sf-fetch-transactions">
+		<set-payload
+			value="{&quot;startDate&quot;: &quot;#[flowVars.startDate]&quot;, &quot;endDate&quot; : &quot;#[flowVars.endDate]&quot;}"
+			doc:name="SP : startDate and endDate" />
+		<choice doc:name="CHECK: Deployment Type">
+			<when expression="#[flowVars.deploymentType.contains(&quot;API Gateway&quot;)]">
+				<http:request config-ref="HTTPARMConnector"
+					path="/insight/v1/products/hybrid/applications/{domain}/transactions"
+					method="POST" doc:name="HTTP CALL : Fetch Insights">
+					<http:request-builder>
+						<http:uri-param paramName="domain" value="#[flowVars.domainName]" />
+						<http:header headerName="Content-Type" value="#['application/json']" />
+						<http:header headerName="Authorization"
+							value="#['Bearer '+org.mule.util.StringUtils.remove(flowVars.accessToken,&quot;\&quot;&quot;)]" />
+						<http:header headerName="X-ANYPNT-ENV-ID" value="${cloudhub.environment.id}" />
+						<http:header headerName="X-ANYPNT-ORG-ID" value="${cloudhub.organization.id}" />
+					</http:request-builder>
+				</http:request>
+			</when>
+			<otherwise>
+				<http:request config-ref="HTTPARMConnector"
+					path="/insight/v1/products/cloudhub/applications/{domain}/transactions"
+					method="POST" doc:name="HTTP CALL : Fetch Insights Cloudhub">
+					<http:request-builder>
+						<http:uri-param paramName="domain" value="#[flowVars.domainName]" />
+						<http:header headerName="Content-Type" value="#['application/json']" />
+						<http:header headerName="Authorization"
+							value="#['Bearer '+org.mule.util.StringUtils.remove(flowVars.accessToken,&quot;\&quot;&quot;)]" />
+						<http:header headerName="X-ANYPNT-ENV-ID" value="${cloudhub.environment.id}" />
+						<http:header headerName="X-ANYPNT-ORG-ID" value="${cloudhub.organization.id}" />
+					</http:request-builder>
+				</http:request>
+
+			</otherwise>
+		</choice>
+
+		<dw:transform-message doc:name="DW : Extract Transaction IDs">
+			<dw:input-payload mimeType="application/json" />
+			<dw:set-payload resource="classpath:dwScripts\extractingTransactionIds.dwl" />
+
+		</dw:transform-message>
+        <logger message="#[payload.size()]" level="INFO" doc:name="Logger"/>
+
+	</sub-flow>
+	<sub-flow name="sf-fetch-transaction-details">
+
+		<collection-splitter doc:name="SPLIT : Transaction ID" />
+		<set-variable variableName="correlationSequence"
+			value="#[message.outboundProperties['MULE_CORRELATION_SEQUENCE']]"
+			doc:name="FV SET: Correlation Sequence" />
+		<set-variable variableName="correlationSize"
+			value="#[message.outboundProperties['MULE_CORRELATION_GROUP_SIZE']]"
+			doc:name="FV SET: Correlation Group Size" />
+		<set-variable variableName="correlationID"
+			value="#[message.outboundProperties['MULE_CORRELATION_ID']]"
+			doc:name="FV SET: Correlation ID" />
+		<choice doc:name="CHECK: Deployment Type">
+			<when expression="#[flowVars.deploymentType.contains(&quot;API Gateway&quot;)]">
+				<http:request config-ref="HTTPARMConnector"
+					path="/insight/v1/products/hybrid/applications/{domain}/transactions/{transactionId}"
+					method="GET" doc:name="HTTP CALL : Fetch Insight Details">
+					<http:request-builder>
+						<http:uri-param paramName="domain" value="#[flowVars.domainName]" />
+						<http:uri-param paramName="transactionId" value="#[payload]" />
+						<http:header headerName="Authorization"
+							value="#['Bearer '+org.mule.util.StringUtils.remove(flowVars.accessToken,&quot;\&quot;&quot;)]" />
+						<http:header headerName="X-ANYPNT-ENV-ID" value="${cloudhub.environment.id}" />
+						<http:header headerName="X-ANYPNT-ORG-ID" value="${cloudhub.organization.id}" />
+						<http:header headerName="Content-Type" value="#['application/json']" />
+					</http:request-builder>
+				</http:request>
+			</when>
+			<otherwise>
+				<http:request config-ref="HTTPARMConnector"
+					path="/insight/v1/products/cloudhub/applications/{domain}/transactions/{transactionId}"
+					method="GET" doc:name="HTTP CALL : Fetch Insight Details Cloudhub">
+					<http:request-builder>
+						<http:uri-param paramName="domain" value="#[flowVars.domainName]" />
+						<http:uri-param paramName="transactionId" value="#[payload]" />
+						<http:header headerName="Authorization"
+							value="#['Bearer '+org.mule.util.StringUtils.remove(flowVars.accessToken,&quot;\&quot;&quot;)]" />
+						<http:header headerName="X-ANYPNT-ENV-ID" value="${cloudhub.environment.id}" />
+						<http:header headerName="X-ANYPNT-ORG-ID" value="${cloudhub.organization.id}" />
+						<http:header headerName="Content-Type" value="#['application/json']" />
+					</http:request-builder>
+				</http:request>
+
+			</otherwise>
+		</choice>
+
+		<message-properties-transformer
+			doc:name="PROP RESET: Correlation Properties">
+			<add-message-property key="MULE_CORRELATION_SEQUENCE"
+				value="#[flowVars.correlationSequence]" />
+			<add-message-property key="MULE_CORRELATION_GROUP_SIZE"
+				value="#[flowVars.correlationSize]" />
+			<add-message-property key="MULE_CORRELATION_ID"
+				value="#[flowVars.correlationID]" />
+		</message-properties-transformer>
+		<collection-aggregator failOnTimeout="true"
+			doc:name="AGGREGATE : Custom Properties of each Transaction ID" />
+
+
+	</sub-flow>
+
+</mule>

@@ -2,5 +2,5 @@
 %output application/json
 ---
 {
-	event: payload default []
+	event: payload default null
 }
