@@ -75,13 +75,6 @@
 				</executions>
 			</plugin>
 
-			<!-- <plugin> <groupId>org.mule.tools.appkit</groupId> <artifactId>mule-appkit-maven-plugin</artifactId> 
-				<version>3.4</version> <extensions>true</extensions> <executions> <execution> 
-				This can be changed to any Maven phase <phase>verify</phase> <goals> <goal>cloudhub-deploy</goal> 
-				</goals> <configuration> Where the app will be deployed <domain>${cloudhub.domain}</domain> 
-				Max wait time in millisecs before timeout <maxWaitTime>180000</maxWaitTime> 
-				</configuration> </execution> </executions> </plugin> -->
-
 			<plugin>
 				<groupId>org.mule.tools.maven</groupId>
 				<artifactId>mule-maven-plugin</artifactId>
@@ -226,6 +219,12 @@
 			<groupId>org.mule.modules</groupId>
 			<artifactId>mule-module-objectstore</artifactId>
 			<version>1.3.2</version>
+		</dependency>
+		<dependency>
+			<groupId>org.mule.modules</groupId>
+			<artifactId>mule-module-validation</artifactId>
+			<version>${mule.version}</version>
+			<scope>provided</scope>
 		</dependency>
 	</dependencies>
 
