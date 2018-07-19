@@ -1,4 +1,4 @@
 %dw 1.0
 %output application/java
 ---
- flowVars.'endTime'
+(sizeOf payload) default 0

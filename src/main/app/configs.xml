@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:objectstore="http://www.mulesoft.org/schema/mule/objectstore"
+	xmlns:cloudhub="http://www.mulesoft.org/schema/mule/cloudhub"
+	xmlns:tls="http://www.mulesoft.org/schema/mule/tls" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/objectstore http://www.mulesoft.org/schema/mule/objectstore/current/mule-objectstore.xsd
+http://www.mulesoft.org/schema/mule/cloudhub http://www.mulesoft.org/schema/mule/cloudhub/current/mule-cloudhub.xsd
+http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/current/mule-tls.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd">
+
+	<http:request-config name="HTTPSplunkHECConnector"
+		host="${splunk.host}" port="${splunk.port}" doc:name="HTTP Request Configuration" />
+	<cloudhub:config name="CloudhubConnectorBasicAuth"
+		username="${cloudhub.user}" password="${cloudhub.password}"
+		doc:name="Cloudhub: Basic Auth Authentication" />
+	<http:request-config name="HTTPARMConnector"
+		protocol="HTTPS" host="${anypoint.host}" port="443"
+		doc:name="HTTP Request Configuration">
+		<tls:context>
+			<tls:trust-store insecure="true" />
+		</tls:context>
+	</http:request-config>
+
+	<objectstore:config name="ApplicationStore"
+		persistent="true" doc:name="ObjectStore" />
+
+	<http:listener-config name="HTTP_Listener_Configuration"
+		host="0.0.0.0" port="8081" doc:name="HTTP Listener Configuration" />
+
+</mule>

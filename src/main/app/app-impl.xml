@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:objectstore="http://www.mulesoft.org/schema/mule/objectstore" xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw"
+	xmlns:cloudhub="http://www.mulesoft.org/schema/mule/cloudhub"
+	xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/cloudhub http://www.mulesoft.org/schema/mule/cloudhub/current/mule-cloudhub.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd
+http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd
+http://www.mulesoft.org/schema/mule/objectstore http://www.mulesoft.org/schema/mule/objectstore/current/mule-objectstore.xsd">
+	<sub-flow name="impl-cloudhub-to-splunk-data-push">
+		<flow-ref name="sf-get-configured-applications" doc:name="sf-get-configured-applications" />
+        <foreach doc:name="For Each">
+            <set-variable variableName="domainName" value="#[payload]" doc:name="FV SET: domainName"/>
+            <objectstore:retrieve config-ref="ApplicationStore" key="#[flowVars.domainName]" doc:name="OS: Retrieve Application Configuration"/>
+            <set-variable variableName="deploymentType" value="#[payload.deploymentType]" doc:name="FV SET: deploymentType"/>
+            <or-filter doc:name="FILTER: Logs or Insights Enabled">
+                <expression-filter expression="#[payload.insightsEnabled == true]"/>
+                <expression-filter expression="#[payload.logsEnabled == true]"/>
+            </or-filter>
+            <enricher source="#[payload.access_token]" target="#[flowVars.accessToken]" doc:name="ME: Access Token">
+                <flow-ref name="sf-login" doc:name="sf-login"/>
+            </enricher>
+            <scatter-gather doc:name="Scatter-Gather">
+                <processor-chain>
+                    <expression-filter expression="#[payload.logsEnabled == true]" doc:name="FILTER: Logs Enabled"/>
+                    <flow-ref name="sf-fetch-logs" doc:name="sf-fetch-logs"/>
+                    <flow-ref name="sf-push-logs" doc:name="sf-push-logs"/>
+                </processor-chain>
+                <processor-chain>
+                    <expression-filter expression="#[payload.insightsEnabled == true]" doc:name="FILTER: Insights Enabled"/>
+                    <flow-ref name="sf-fetch-insights" doc:name="sf-fetch-insights"/>
+                    <flow-ref name="sf-push-insights" doc:name="sf-push-insights"/>
+                </processor-chain>
+            </scatter-gather>
+            <logger message="Processing of events for application #[flowVars.domainName] completed." level="INFO" doc:name="LOG: Status"/>
+        </foreach>
+
+	</sub-flow>
+</mule>

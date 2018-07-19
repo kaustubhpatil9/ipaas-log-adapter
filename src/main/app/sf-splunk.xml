@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd">
+	<sub-flow name="sf-push-logs">
+		<dw:transform-message doc:name="DW: Prepare Logs Push Request">
+			<dw:set-payload resource="classpath:dwScripts\setJsonPayload.dwl" />
+			<dw:set-variable resource="classpath:dwScripts\logsPayloadSizeCal.dwl"
+				variableName="logsPayloadSize" />
+		</dw:transform-message>
+		<choice doc:name="Choice">
+			<when expression="#[flowVars.logsPayloadSize &gt; 0]">
+				<logger message="Logs pushed" level="INFO" doc:name="Logger" />
+			</when>
+			<otherwise>
+				<logger
+					message="No logs to process."
+					level="INFO" doc:name="Logger" />
+			</otherwise>
+		</choice>
+
+	</sub-flow>
+
+	<sub-flow name="sf-push-insights">
+		<dw:transform-message doc:name="DW : Prepare Insights Push Request">
+			<dw:input-payload mimeType="application/java" />
+			<dw:set-payload resource="classpath:dwScripts\setEventsJsonPayload.dwl" />
+			<dw:set-variable resource="classpath:dwScripts\calculateEventsPayloadSize.dwl"
+				variableName="eventsSize" />
+
+		</dw:transform-message>
+		<choice doc:name="IF: Events Present">
+			<when expression="#[flowVars.eventsPayloadSize &gt; 0]">
+				<logger message="Insights pushed" level="INFO" doc:name="Logger" />
+			</when>
+			<otherwise>
+				<logger message="No events to process" level="INFO" doc:name="Logger" />
+			</otherwise>
+		</choice>
+	</sub-flow>
+</mule>

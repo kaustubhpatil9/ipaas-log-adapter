@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>CloudSplunky</title>
+<style>
+* {
+	box-sizing: border-box;
+}
+
+input[type=text], select, textarea {
+	width: 100%;
+	padding: 12px;
+	border: 1px solid #ccc;
+	border-radius: 4px;
+	resize: vertical;
+}
+
+input[type=radio], input[type=checkbox] {
+	margin-top: 15px;
+}
+
+label {
+	padding: 12px 12px 12px 0;
+	display: inline-block;
+}
+
+input[type=submit], input[type=reset] {
+	background-color: #4CAF50;
+	color: white;
+	padding: 12px 20px;
+	border: none;
+	border-radius: 4px;
+	cursor: pointer;
+	float: right;
+}
+
+input[type=submit]:hover {
+	background-color: #45a049;
+}
+
+.container {
+	border-radius: 5px;
+	background-color: #f2f2f2;
+	padding: 30px 50px;
+	margin: 0 auto;
+	width: 1000px;
+}
+
+.footer {
+	position: absolute;
+	border-radius: 5px;
+	background-color: #f2f2f2;
+	padding: 10px 34%;
+	margin: 0 auto;
+	width: 99%;
+	bottom: 0;
+}
+
+.footer-text {
+	font-size: 12px;
+}
+
+.col-6 {
+	float: left;
+	width: 6%;
+	margin-top: 6px;
+}
+
+.col-10 {
+	float: left;
+	width: 10%;
+	margin-top: 6px;
+}
+
+.col-25 {
+	float: left;
+	width: 25%;
+	margin-top: 6px;
+}
+
+.col-75 {
+	float: left;
+	width: 75%;
+	margin-top: 6px;
+}
+
+/* Clear floats after the columns */
+.row:after {
+	content: "";
+	display: table;
+	clear: both;
+}
+
+/* Responsive layout - when the screen is less than 600px wide, make the two columns stack on top of each other instead of next to each other */
+@media screen and (max-width: 600px) {
+	.col-25, .col-75, input[type=submit] {
+		width: 100%;
+		margin-top: 0;
+	}
+}
+</style>
+</head>
+<body>
+
+	<div class="container">
+
+		<form action="/web/applications" method="post" autocomplete="off"
+			id="prop-form" enctype="application/x-www-form-urlencoded">
+			<div class="row" align="center" style="padding-bottom: 15px;">
+				<b>CloudSplunky Management Console</b>
+			</div>
+
+			<div class="row">
+				<div class="col-25">
+					<label>Action</label>
+				</div>
+				<div class="col-10">
+					<input type="radio" id="create" name="action" checked="checked"
+						onclick="actionEventHandler('create')" value="create" /> Create
+				</div>
+
+				<div class="col-10">
+					<input type="radio" id="delete" name="action"
+						onclick="actionEventHandler('delete')" value="delete" /> Delete
+				</div>
+
+			</div>
+
+
+			<div class="row">
+				<div class="col-25">
+					<label for="appName">Application Name</label>
+				</div>
+				<div class="col-75">
+					<input type="text" id="appName" maxlength="100" required="required"
+						name="appName" />
+				</div>
+			</div>
+
+			<div class="row" id="deployType">
+				<div class="col-25">
+					<label for="deploymentType">Deployment Type</label>
+				</div>
+				<div class="col-75">
+					<select id="deploymentType" required="required"
+						name="deploymentType"
+						onchange="deploymentTypeEventHandler(this.value)">
+						<option>CloudHub Worker</option>
+						<option>On-Premise Worker (API Gateway)</option>
+					</select>
+				</div>
+			</div>
+
+			<div class="row" id="events">
+				<div class="col-25">
+					<label>Events Tracked</label>
+				</div>
+				<div class="col-10" id="logsDiv">
+					<input type="checkbox" id="logsEnabled" name="logs" value="true">
+					Logs
+				</div>
+				<div class="col-10">
+					<input type="checkbox" id="insightsEnabled" name="insights"
+						value="true"> Insights
+				</div>
+			</div>
+			<div class="row">
+				<br /> <input type="submit" name="Submit" form="prop-form">
+			</div>
+
+		</form>
+
+	</div>
+	<div class="footer">
+		<footer class="footer-text">
+			Copyright &copy; 2018 Accenture Solutions Pvt. Ltd | <a
+				href="https://tldrlegal.com/license/mit-license">MIT License</a>
+		</footer>
+	</div>
+
+
+	<script type="text/javascript">
+		function actionEventHandler(action) {
+
+			if (action == "delete") {
+				document.getElementById("deployType").style.display = "none";
+				document.getElementById("events").style.display = "none";
+
+				document.getElementById("deploymentType").required = false;
+			} else {
+				document.getElementById("deployType").style.display = "block";
+				document.getElementById("events").style.display = "block";
+			}
+		}
+
+		function deploymentTypeEventHandler(deploymentType) {
+			if (deploymentType == "On-Premise Worker (API Gateway)") {
+				document.getElementById("logsEnabled").checked = false;
+				document.getElementById("logsEnabled").disabled = true;
+			} else {
+				document.getElementById("logsEnabled").disabled = false;
+			}
+		}
+	</script>
+
+
+
+</body>
+</html>
