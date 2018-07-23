@@ -17,6 +17,12 @@ http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/m
 		</dw:transform-message>
 		<choice doc:name="Choice">
 			<when expression="#[flowVars.logsPayloadSize &gt; 0]">
+				<http:request config-ref="HTTPSplunkHECConnector" path="/services/collector" method="POST" doc:name="HTTP">
+                    <http:request-builder>
+                        <http:header headerName="Host" value="${splunk.host}"/>
+                        <http:header headerName="Authorization" value="${splunk.token}"/>
+                    </http:request-builder>
+                </http:request>
 				<logger message="Logs pushed" level="INFO" doc:name="Logger" />
 			</when>
 			<otherwise>
@@ -38,6 +44,12 @@ http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/m
 		</dw:transform-message>
 		<choice doc:name="IF: Events Present">
 			<when expression="#[flowVars.eventsPayloadSize &gt; 0]">
+				<http:request config-ref="HTTPSplunkHECConnector" path="/services/collector" method="POST" doc:name="HTTP">
+                    <http:request-builder>
+                        <http:header headerName="Host" value="${splunk.host}"/>
+                        <http:header headerName="Authorization" value="${splunk.token}"/>
+                    </http:request-builder>
+                </http:request>
 				<logger message="Insights pushed" level="INFO" doc:name="Logger" />
 			</when>
 			<otherwise>

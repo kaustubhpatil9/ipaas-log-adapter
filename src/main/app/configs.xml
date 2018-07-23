@@ -13,16 +13,13 @@ http://www.springframework.org/schema/beans http://www.springframework.org/schem
 http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd">
 
 	<http:request-config name="HTTPSplunkHECConnector"
-		host="${splunk.host}" port="${splunk.port}" doc:name="HTTP Request Configuration" />
+		protocol="HTTPS" host="${splunk.host}" port="${splunk.port}" doc:name="HTTP Request Configuration" />
 	<cloudhub:config name="CloudhubConnectorBasicAuth"
 		username="${cloudhub.user}" password="${cloudhub.password}"
 		doc:name="Cloudhub: Basic Auth Authentication" />
 	<http:request-config name="HTTPARMConnector"
 		protocol="HTTPS" host="${anypoint.host}" port="443"
 		doc:name="HTTP Request Configuration">
-		<tls:context>
-			<tls:trust-store insecure="true" />
-		</tls:context>
 	</http:request-config>
 
 	<objectstore:config name="ApplicationStore"
