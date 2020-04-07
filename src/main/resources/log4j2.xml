@@ -1,13 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Configuration>
+<Configuration status="INFO" name="cloudhub" packages="com.splunk.logging,org.apache.logging.log4j">
+    
     <Appenders>
+    
+    <SplunkHttp name="Splunk" url="https://host:port/" token="token" batch_size_count="1" disableCertificateValidation="true" />
+   
+    
         <RollingFile name="file" fileName="${sys:mule.home}${sys:file.separator}logs${sys:file.separator}cloudsplunky.log" 
                  filePattern="${sys:mule.home}${sys:file.separator}logs${sys:file.separator}cloudsplunky-%i.log">
             <PatternLayout pattern="%d [%t] %-5p %c - %m%n" />
             <SizeBasedTriggeringPolicy size="10 MB" />
             <DefaultRolloverStrategy max="10"/>
         </RollingFile>
+        
+         
     </Appenders>
+   
     <Loggers>
         <!-- CXF is used heavily by Mule for web services -->
         <AsyncLogger name="org.apache.cxf" level="WARN"/>
@@ -28,6 +36,7 @@
         
         <AsyncRoot level="INFO">
             <AppenderRef ref="file" />
+            <AppenderRef ref="Splunk" />
         </AsyncRoot>
     </Loggers>
 </Configuration>

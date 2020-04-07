@@ -28,12 +28,12 @@ http://www.mulesoft.org/schema/mule/objectstore http://www.mulesoft.org/schema/m
                 <processor-chain>
                     <expression-filter expression="#[payload.logsEnabled == true]" doc:name="FILTER: Logs Enabled"/>
                     <flow-ref name="sf-fetch-logs" doc:name="sf-fetch-logs"/>
-                    <flow-ref name="sf-push-logs" doc:name="sf-push-logs"/>
+                    <flow-ref name="sf-push-logs-log4j" doc:name="sf-push-logs-log4j"/>
                 </processor-chain>
                 <processor-chain>
                     <expression-filter expression="#[payload.insightsEnabled == true]" doc:name="FILTER: Insights Enabled"/>
                     <flow-ref name="sf-fetch-insights" doc:name="sf-fetch-insights"/>
-                    <flow-ref name="sf-push-insights" doc:name="sf-push-insights"/>
+                    <flow-ref name="sf-push-insights-log4j" doc:name="sf-push-insights-log4j"/>
                 </processor-chain>
             </scatter-gather>
             <logger message="Processing of events for application #[flowVars.domainName] completed." level="INFO" doc:name="LOG: Status"/>

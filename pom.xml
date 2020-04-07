@@ -226,6 +226,11 @@
 			<version>${mule.version}</version>
 			<scope>provided</scope>
 		</dependency>
+		<dependency>
+			<groupId>com.splunk.logging</groupId>
+			<artifactId>splunk-library-javalogging</artifactId>
+			<version>1.7.3</version>
+		</dependency>
 	</dependencies>
 
 	<repositories>
@@ -255,10 +260,26 @@
 			<url>http://repository.mulesoft.org/releases/</url>
 			<layout>default</layout>
 		</repository>
+
+		<repository>
+			<id>mule-ee-releases</id>
+			<name>MuleSoft ee Releases Repository</name>
+			<url>https://repository.mulesoft.org/nexus-ee/content/repositories/releases-ee/</url>
+			<layout>default</layout>
+		</repository>
+		<repository>
+			<id>splunk-artifactory</id>
+			<name>Splunk Releases</name>
+			<url>https://splunk.jfrog.io/splunk/ext-releases-local</url>
+		</repository>
 	</repositories>
 
 	<pluginRepositories>
 
+		<pluginRepository>
+			<id>MuleRepository</id>
+			<url>https://repository.mulesoft.org/nexus-ee/content/repositories/releases-ee</url>
+		</pluginRepository>
 		<pluginRepository>
 			<id>mule-public</id>
 			<url>https://repository.mulesoft.org/nexus/content/repositories/releases</url>

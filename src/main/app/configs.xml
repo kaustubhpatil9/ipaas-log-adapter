@@ -12,8 +12,9 @@ http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/htt
 http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
 http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd">
 
-	<http:request-config name="HTTPSplunkHECConnector"
-		protocol="HTTPS" host="${splunk.host}" port="${splunk.port}" doc:name="HTTP Request Configuration" />
+	<!-- <http:request-config name="HTTPSplunkHECConnector"
+		protocol="HTTPS" host="${splunk.host}" port="${splunk.port}" doc:name="HTTP Request Configuration" >
+	</http:request-config> -->
 	<cloudhub:config name="CloudhubConnectorBasicAuth"
 		username="${cloudhub.user}" password="${cloudhub.password}"
 		doc:name="Cloudhub: Basic Auth Authentication" />
